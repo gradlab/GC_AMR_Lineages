@@ -13,7 +13,7 @@ library(gridExtra)
 
 set.seed(12345)
 
-source("models/model3.R")
+source("models/model.R")
 
 PTS_PER_YR = 4L 
 dat_in <- read.csv("data/metadata/usage.csv")[1:3]
@@ -137,7 +137,7 @@ fitted <- lnm$sample(iter_warmup=1000,#2000,
     max_treedepth=14, 
     adapt_delta=0.99)
 #Plot
-source("models/plot_func3.R")
+source("models/plot_func.R")
 
 lab_df_mtr <- data.frame(x=c(2010, 2012),
     lab=factor(c("Azithromycin Co-treatment recommended",

@@ -328,7 +328,7 @@ make_model <- function(site_data, site_eff_data, unweighted_data, weighted_data)
         "lineage_intercepts += site_{site}_lineage_a;"))
 
 
-    skeleton <- read_file("models/lineage_mod_skeleton3.stan")
+    skeleton <- read_file("models/lineage_mod_skeleton.stan")
 
     skeleton <- str_replace(skeleton, "###```DATA_BLOCK```",glue_collapse(data_block,"\n"))
     skeleton <- str_replace(skeleton, "###```SITE_INTERCEPT_BLOCK```",glue_collapse(intercept_block,"\n"))
