@@ -23,7 +23,7 @@ get_effects <- function(fit, site, select_motifs=c(), exclude_motifs=c(), exclud
         {
             data.frame(
                 motif=name_transf(contr_names[x]),
-                level="Group Intercept",
+                level="Mean",
                 cov=cov_names,
                 cov_idx=cov_idx,
                 vname=paste0("site_",sname,"_b[",x,",",seq_along(cov_names),"]"),

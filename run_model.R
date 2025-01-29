@@ -397,6 +397,13 @@ plts <- plot_contribs_loci(lnm)
 ggsave("plots/rt_exp.pdf",  
     marrangeGrob(grobs = plts, nrow=1, ncol=1, top=NULL), width=12, height=7)
 
+df_resi <- comp_resi_by_yr(lnm)
+counts_greater <- df_resi %>% 
+    group_by(lin,year) %>% 
+    summarise(y=mean(y)) %>% 
+    group_by(lin) %>% 
+    summarise(n=sum(abs(y) > .1)) %>%
+    ungroup()
 
 source("plotting/ci_tbl.R")
 ci_data <- make_ci_dfs(lnm)
@@ -442,3 +449,9 @@ abs_df %>%
         heading.padding = px(1)) %>%
     gtsave("tables/res_sum.tex")
 
+
+r_g_1 <- counts_greater[counts_greater$n >= 1, "lin"] %>% unlist %>% as.character
+r_g_3 <- counts_greater[counts_greater$n >= 3, "lin"] %>% unlist %>% as.character
+
+print(paste("Lineages with at least year where mean residual+background exceeded 0.1:", paste(r_g_1, collapse=", ")))
+print(paste("Lineages with at 3 years where mean residual+background exceeded 0.1:", paste(r_g_3, collapse=", ")))

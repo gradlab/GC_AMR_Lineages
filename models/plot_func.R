@@ -25,7 +25,7 @@ comp_effects <- function(fit, site, select_motifs=c(), exclude_motifs=c(), exclu
         {
             data.frame(
                 motif=name_transf(contr_names[x]),
-                level="Group Intercept",
+                level="Mean",
                 cov=cov_names,
                 cov_idx=cov_idx,
                 vname=paste0("site_",sname,"_b[",x,",",seq_along(cov_names),"]"),
@@ -282,7 +282,7 @@ plot_site_intercepts <- function(fit, site, exclude_motifs=c(), exclude_levels=c
         {
             data.frame(
                 motif=name_transf(contr_names[x]),
-                level="Group Intercept",
+                level="Mean",
                 vname=paste0("site_",sname,"_a[",x,"]"),
                 re_name=NA
             )
@@ -355,7 +355,7 @@ plot_site_coeffs <- function(fit, site, exclude_motifs=c(), exclude_levels=c())
         {
             data.frame(
                 motif=name_transf(contr_names[x]),
-                level="Group Intercept",
+                level="Mean",
                 cov=cov_names,
                 vname=paste0("site_",sname,"_b[",x,",",seq_along(cov_names),"]"),
                 re_name=NA

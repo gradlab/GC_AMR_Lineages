@@ -145,7 +145,7 @@ get_contrib_cis <- function(lnm, offs=2020)
     last_grid <- lnm$data_list$grid_idx[cumsum(lnm$data_list$lin_sizes)]
     grid_ts <- offs - lnm$data_list$grid_endpts
 
-    asign_epochs <- function(x) sapply(x, function(y)
+    assign_epochs <- function(x) sapply(x, function(y)
         if(y < 2007) 1L else if (y < 2010) 2L else if (y < 2012) 3L else 4L
     )
 
@@ -203,7 +203,7 @@ get_contrib_cis <- function(lnm, offs=2020)
 
     leg <- c(site_name, "'Lineage background'", "Residual", "AMR Total", "Total")
 
-    df %<>% mutate(epoch=asign_epochs(grid_ts[grid])) %>%
+    df %<>% mutate(epoch=assign_epochs(grid_ts[grid])) %>%
         group_by(epoch, lin, Contribution, draw) %>%
         summarise(y=mean(y))
     
@@ -221,11 +221,64 @@ get_contrib_cis <- function(lnm, offs=2020)
         mutate(lin=factor(paste0("Lineage ", lin), levels=paste0("Lineage ", lins), ordered=T),
             Contribution=factor(Contribution, levels=leg, ordered=T),
             epoch_s=c("1993-2007", "2007-2010", "2010-2012", "2012-2019")[epoch])
-        #ggplot(aes(x=Contribution, color=Contribution, ymin = q2.5, y=q50, ymax = q97.5)) +
-        #    geom_linerange(lwd=2)+
-        #    geom_hline(yintercept=0, linetype='dashed') +
-        #    facet_grid(rows = vars(lin), cols=vars(epoch)) +
-        #    theme_bw() + 
-        #    labs(x="Contribution", y="Growth Rate", fill="Contribution Effect") +
-        #    scale_color_brewer(palette ="Dark2")
+}
+
+comp_resi_by_yr <- function(lnm, offs=2020)
+{
+    df <- data.frame(lin=c(), grid=c(), Contribution=c(), y=c())
+
+    ddf <- as_draws_df(lnm$fit()$draws())
+
+    n_grid <- lnm$data_list$N_grid
+    n_lin <- lnm$data_list$N_lin
+
+    lins <- 1:n_lin
+    
+    last_grid <- lnm$data_list$grid_idx[cumsum(lnm$data_list$lin_sizes)]
+    grid_ts <- offs - lnm$data_list$grid_endpts
+
+    assign_epochs <- function(x) 
+    {
+        u <- 2:2020
+        l <- 1:2019
+        sapply(x, function(y) which((y < u) & (y >= l)))
+    }
+    
+    rt_names <- lapply(lins, function(x) paste0("lin_rt_resi[",x,",",1:n_grid,"]"))
+    resi_names <- lapply(lins, function(x) paste0("f_residual[",x,",",1:n_grid,"]"))
+    resi_a_names <- paste0("lin_rt_intercepts[",lins,"]")
+    sd_draws <- ddf[,"residual_sd"]
+
+    for (lin in lins)
+    {
+        res_lin <- unlist(sd_draws) * as.matrix(ddf[, resi_names[[lin]]])
+        res_df <- as.data.frame(res_lin)
+        colnames(res_df) <- 1:n_grid
+        res_df$draw <- 1:nrow(res_df)
+
+        bgr_df <- as.data.frame(unlist(ddf[,resi_a_names[lin]]) %*% t(rep(1,n_grid)))
+        colnames(bgr_df) <- 1:n_grid
+        bgr_df$draw <- 1:nrow(bgr_df)
+
+
+        res_df <- res_df %>% 
+            pivot_longer(!draw, names_to = "grid", values_to = "y") %>%
+            mutate(grid=as.integer(grid), Contribution="Residual", lin=lin)
+        bgr_df <- bgr_df %>% 
+            pivot_longer(!draw, names_to = "grid", values_to = "y") %>%
+            mutate(grid=as.integer(grid), Contribution="'Lineage background'", lin=lin)
+
+        df <- rbind(df, res_df, bgr_df)
+    }
+
+    df %<>% group_by(grid, lin, draw) %>%
+        summarise(y=(y)) %>% 
+        ungroup() %>%
+        mutate(year=assign_epochs(grid_ts[grid])) %>%
+        group_by(year, lin, draw) %>%
+        summarise(y=mean(y)) %>% 
+        ungroup() %>%
+        mutate(lin=factor(paste0("Lineage ", lin), levels=paste0("Lineage ", lins), ordered=T))
+
+    df
 }
