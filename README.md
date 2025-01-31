@@ -14,3 +14,6 @@ This repository contains all the code and data that is needed to reproduce the r
 The execution order is as follows:
 * Generate lineage data by navigating to ```data/``` and running ```split_lineages.R```.
 * Run the phylodynamic model by running ```run_model.R``` from the top-level directory.
+
+## Sequence Acession Numbers and Metadata
+The accession numbers and metadata can be found under ```data/metadata/Ng-Combined-Metadata.txt```
