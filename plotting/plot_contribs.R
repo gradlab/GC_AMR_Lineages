@@ -16,6 +16,8 @@ plot_contribs_loci <- function(lnm, offs=2020)
     lins <- 1:n_lin
     
     last_grid <- lnm$data_list$grid_idx[cumsum(lnm$data_list$lin_sizes)]
+    first_grid <- lnm$data_list$grid_idx[c(1,1+cumsum(lnm$data_list$lin_sizes)[1:(n_lin-1)])]
+
     grid_ts <- offs - lnm$data_list$grid_endpts
     for (s in 1:5)
     {
@@ -27,7 +29,7 @@ plot_contribs_loci <- function(lnm, offs=2020)
         {
 
             lin_dets <- name_transf(inter$contr_names[inter$design_matrix[lin,]])
-            lin_re <- "Group Intercept"
+            lin_re <- "Mean"
             if (inter$has_re) 
             {
                 lin_re <- name_transf(paste0(inter$re, " ", inter$re_levels)[inter$level_idx[lin]])
@@ -59,7 +61,8 @@ plot_contribs_loci <- function(lnm, offs=2020)
     leg <- c(site_name, "'Lineage background'", "Residual")
 
     df_effs <- df %>% 
-        mutate(y=ifelse(as.integer(grid) > last_grid[lin], NA, y)) %>%
+        mutate(y=ifelse((as.integer(grid) > last_grid[lin]) | 
+            (as.integer(grid) < first_grid[lin]), NA, y)) %>%
         group_by(lin, grid) %>%
         mutate(ave_rt=sum(y), 
             lin=factor(paste0("Lineage ", lin), levels=paste0("Lineage ", lins), ordered=T),
@@ -68,7 +71,10 @@ plot_contribs_loci <- function(lnm, offs=2020)
 
     has_epoch <- function(lin, ep) {
         ep_upper <- c(2007, 2010, 2012, 2019)
-        grid_ts[last_grid[lin]] < ep_upper[ep]
+        ep_lower <- c(-Inf, 2007, 2010, 2012)
+
+        return((grid_ts[last_grid[lin]] < ep_upper[ep]) & 
+            (grid_ts[first_grid[lin]] >= ep_lower[ep]))
     }
 
     df_ci <- get_contrib_cis(lnm) %>%
@@ -158,7 +164,7 @@ get_contrib_cis <- function(lnm, offs=2020)
         {
 
             lin_dets <- name_transf(inter$contr_names[inter$design_matrix[lin,]])
-            lin_re <- "Group Intercept"
+            lin_re <- "Mean"
             if (inter$has_re) 
             {
                 lin_re <- name_transf(paste0(inter$re, " ", inter$re_levels)[inter$level_idx[lin]])

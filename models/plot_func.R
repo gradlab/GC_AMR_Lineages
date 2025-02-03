@@ -445,6 +445,7 @@ plot_traj <- function(fit, with_resi=F, offs=0)
     ddf <- as_draws_df(fit$fit()$draws())
 
     last_grid <- fit$data_list$grid_idx[cumsum(fit$data_list$lin_sizes)]
+    first_grid <- fit$data_list$grid_idx[c(1,1+cumsum(fit$data_list$lin_sizes)[1:(n_lin-1)])]
 
     traj_names <- NA
     if (with_resi)
@@ -462,7 +463,8 @@ plot_traj <- function(fit, with_resi=F, offs=0)
     }))
 
     traj_df %>% 
-        mutate(y=ifelse(as.integer(x) > last_grid[lin], NA, y)) %>%
+        mutate(y=ifelse((as.integer(x) > last_grid[lin]) | 
+            (as.integer(x) < first_grid[lin]), NA, y)) %>%
         group_by(lin, x) %>% 
         summarise(as_tibble_row(quantile(y, c(.025, .5, .975),na.rm=T),
             .name_repair = \(x) paste0('q', parse_number(x)))) %>% 
@@ -485,6 +487,7 @@ plot_rt <- function(fit, offs=0, with_resi=F)
     ddf <- as_draws_df(fit$fit()$draws())
 
     last_grid <- fit$data_list$grid_idx[cumsum(lnm$data_list$lin_sizes)]
+    first_grid <- fit$data_list$grid_idx[c(1,1+cumsum(fit$data_list$lin_sizes)[1:(n_lin-1)])]
 
     traj_names <- NA
     if (!with_resi){
@@ -502,7 +505,8 @@ plot_rt <- function(fit, offs=0, with_resi=F)
     }))
 
     traj_df %>% 
-        mutate(y=ifelse(as.integer(x) > last_grid[lin], NA, y)) %>%
+        mutate(y=ifelse((as.integer(x) > last_grid[lin]) | 
+            (as.integer(x) < first_grid[lin]), NA, y)) %>%
         group_by(lin, x) %>% 
         summarise(as_tibble_row(quantile(y, c(.025, .5, .975), na.rm =T),
         .name_repair = \(x) paste0('q', parse_number(x)))) %>% 
