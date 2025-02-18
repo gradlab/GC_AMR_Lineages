@@ -316,12 +316,13 @@ plot(plot_site_effects(lnm, 2, offs=2020, relative=T) +
 )
 dev.off()
 
-pdf("plots/effects_ponA.pdf",10,10)
+pdf("plots/effects_ponA.pdf",7,4)
 plot(plot_site_effects(lnm, 3, offs=2020, relative=F) +
     scale_x_continuous(limits=c(1993, 2013),
         breaks=c(2013, 2008, 2003, 1998, 1993)
 
     ) +
+    xlimset +
     ylab("Predicted Growth Rate Effect Relative to Baseline Type") +
     ggtitle("Absolute Growth Rate Effect Relative to Baseline Type")
 )
