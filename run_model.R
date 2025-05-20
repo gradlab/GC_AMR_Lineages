@@ -6,8 +6,6 @@ library(stringr)
 library(stringi)
 library(glue)
 library(posterior)
-library(ggplot2)
-library(bayesplot)
 library(gt)
 library(gridExtra)
 

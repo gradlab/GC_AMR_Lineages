@@ -1,5 +1,4 @@
 library(ape)
-library(phangorn)
 library(ggplot2)
 library(ggtree)
 library(stringr)
@@ -7,7 +6,6 @@ library(phylodyn)
 library(viridis)
 library(tidyverse)
 library(ggnewscale)
-library(lubridate)
 library(patchwork)
 
 source("../plotting/plot_lin_motif.R")

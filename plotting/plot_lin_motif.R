@@ -156,7 +156,7 @@ plot_lin_tree <- function(tree, lin_df) {
 
     p <- ggtree(tree,mrsd="2020-1-1", lwd=.8) %<+% lin_df +
         aes(color=col, alpha=alpha) + 
-        geom_nodelab(mapping=aes(node=node, label=cllab, color=col_lab, x=2020+5, alpha=1.0),size=5.0, hjust=0)+ 
+        geom_nodelab(mapping=aes(node=node, label=cllab, color=col_lab, x=2020+2.5, alpha=1.0),size=5.0, hjust=0)+ 
         scale_color_manual(
             breaks=factor(0L:3L),
             values=c("slategray3","steelblue4", "steelblue2", "tomato3"), 
@@ -165,6 +165,8 @@ plot_lin_tree <- function(tree, lin_df) {
         hexpand(.03, direction=1) + 
         scale_x_ggtree()+
         labs(x="Year")+
+        scale_x_continuous(breaks=seq(from=1950, to=2020, by= 10)) +
+        coord_cartesian(xlim = c(1950, 2026))+
         theme(legend.position = "none",
             axis.text.x = element_text(size=15),
             axis.title.x = element_text(size=20),
