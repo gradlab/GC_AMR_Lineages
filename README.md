@@ -17,3 +17,28 @@ The execution order is as follows:
 
 ## Sequence Acession Numbers and Metadata
 The accession numbers and metadata can be found under ```data/metadata/Ng-Combined-Metadata.txt```
+
+## Dependencies
+The following packages are required to execute the software in this repository and available on CRAN:
+* ```tidyverse```
+* ```cmdstanr```
+* ```ape```
+* ```stringi```
+* ```glue```
+* ```gt```
+* ```ggplot2```
+* ```gridExtra```
+* ```viridis```
+* ```ggnewscale```
+* ```patchwork```
+* ```ggridges```
+* ```RColorBrewer```
+* ```gtExtras```
+* ```posterior```
+
+The following packages are required and have to be installed from their respective ```github```repositories:
+* ```phylodyn``` [https://github.com/mdkarcher/phylodyn](https://github.com/mdkarcher/phylodyn)
+
+The following packages are required and available on Bioconductor:
+* ```treeio```
+* ```ggtree```
