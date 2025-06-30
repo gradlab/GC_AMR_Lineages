@@ -1,0 +1,700 @@
+import os
+from Bio import SeqIO
+from datetime import datetime
+from collections import defaultdict
+from Bio import SearchIO
+from Bio import AlignIO
+from Bio.Seq import Seq
+import re
+
+SAMPLES,PAIRED = glob_wildcards("fastqs/{sample}_{paired, \d}.fastq.gz")
+SAMPLES = list(set(SAMPLES))
+PAIRED = list(set(PAIRED))
+GENES = ["mtrR", "mtrC", "mtrD", "mtrE", "mtrPromoter", "blaTEM", "tetM", "ermB", "ermF"]
+
+localrules: all, index, pseudogenome, multiqc_fastqc, multiqc_bamqc, filter_assembly, snps, resistance_alleles, summarize_qc, blastdb, blast_genes, fasta_genes, mtr_summary, rRNA_summary, penA_alleles, gene_presence_absence, inframe_indels, porB1a, porB1b, create_poppunk_input
+
+rule all:
+    input:
+        expand("pseudogenomes/{sample}_pseudogenome.fasta", sample=SAMPLES),
+        "qc/multiqc_fastqc.html",
+        "qc/multiqc_bamqc.html",
+        expand("annotations/{sample}/{sample}.gff", sample=SAMPLES),
+        "resistance/{0}_gc_resistance_alleles.tsv".format(datetime.strftime(datetime.now(), "%Y-%m-%d")),
+        "qc/qc_summary.txt",
+        "resistance/mtr_alleles.tsv",
+        "resistance/rRNA_allele_summary.txt",
+        "resistance/gc_penA.txt",
+        "resistance/resistance_gene_presence_absence.tsv",
+        "resistance/resistance_inframe_indels.tsv",
+        "resistance/porB1a_SNPs.txt",
+        "resistance/porB1b_SNPs.txt",
+        "poppunk_finished.txt"
+
+
+
+ 
+rule fastqc:
+    input:
+        "fastqs/{sample}_{paired}.fastq.gz"
+    output:
+        html="qc/fastqc/{sample}_{paired}.html",
+        zip="qc/fastqc/{sample}_{paired}_fastqc.zip"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 500,
+        time=lambda wildcards, attempt: attempt * 5
+    log:
+        "logs/fastqc/{sample}_{paired}.log"
+    wrapper:
+        "v1.28.0/bio/fastqc"
+
+rule multiqc_fastqc:
+    input:
+        expand("qc/fastqc/{sample}_{paired}_fastqc.zip", sample=SAMPLES, paired=PAIRED)
+    output:
+        "qc/multiqc_fastqc.html"
+    params: ""
+    log:
+        "logs/multiqc_fastqc.log"
+    wrapper:
+        "v3.3.6/bio/multiqc"
+rule map_sort:
+    input:
+        reads=expand("fastqs/{{sample}}_{paired}.fastq.gz", paired=PAIRED),
+        idx=multiext("reference_sequences/Neisseria_gonorrhoeae_NCCP11945.fa", ".amb", ".ann", ".bwt", ".pac", ".sa")
+    output:
+        temp("mapping/{sample}.bam")
+    params:
+        index="reference_sequences/Neisseria_gonorrhoeae_NCCP11945.fa",
+        sorting="samtools",
+        sort_order="coordinate"
+    log:
+        "logs/bwa/{sample}.log"
+    threads: 1
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        time=lambda wildcards, attempt: attempt * 35
+    wrapper:
+        "v1.28.0/bio/bwa/mem"
+
+rule duplicates:
+    input:
+        bams="mapping/{sample}.bam"
+    output:
+        bam="mapping/{sample}.marked.bam",
+        metrics=temp("mapping/{sample}.metrics")
+    log:
+        "logs/picard/{sample}.log"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 8000,
+        time=lambda wildcards, attempt: attempt * 10
+    wrapper:
+        "v1.28.0/bio/picard/markduplicates"
+
+rule index:
+    input:
+        "mapping/{sample}.marked.bam"
+    output:
+        "mapping/{sample}.marked.bam.bai"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 100,
+        time=lambda wildcards, attempt: attempt * 1
+    wrapper:
+        "v1.28.0/bio/samtools/index"
+
+rule bamqc:
+    input:
+        "mapping/{sample}.marked.bam"
+    output:
+        "qc/bamqc/{sample}/qualimapReport.html"
+    params:
+        outdir="qc/bamqc/{sample}/"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 500,
+        time=lambda wildcards, attempt: attempt * 5
+    log:
+        "logs/bamqc/{sample}.log"
+    shell:
+        """
+        /n/holylfs05/LABS/grad_lab/Lab/software/qualimap_v2.2.1/qualimap bamqc -bam {input} -outdir {params.outdir} --java-mem-size=10G
+        """
+
+rule multiqc_bamqc:
+    input:
+        expand("qc/bamqc/{sample}/qualimapReport.html", sample=SAMPLES)
+    output:
+        "qc/multiqc_bamqc.html",
+        directory("qc/multiqc_bamqc_data")
+    params:
+        extra="--data-dir -c conda_envs/multiqc_config.yml"
+    log:
+        "logs/multiqc_bamqc.log"
+    wrapper:
+        "v3.3.6/bio/multiqc"
+
+rule variants:
+    input:
+        bam="mapping/{sample}.marked.bam",
+        index="mapping/{sample}.marked.bam.bai",
+        reference="reference_sequences/Neisseria_gonorrhoeae_NCCP11945.fa"
+    params:
+        name="{sample}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 4000,
+        time=lambda wildcards, attempt: attempt * 60
+    output:
+        "variants/{sample}_pilon.vcf.gz",
+        temp("variants/{sample}_pilon.fasta")
+    conda:
+        "conda_envs/tabix.yml"
+    log:
+        "logs/pilon/{sample}.log"
+    shell:
+        """
+        java -Xmx16g -jar /n/holylfs05/LABS/grad_lab/Lab/software/pilon-1.24.jar --genome {input.reference} --bam {input.bam} --output variants/{params.name}_pilon --variant --vcf --mindepth 10 --minmq 20
+        bgzip variants/{params.name}_pilon.vcf
+        """
+
+
+rule pseudogenome:
+    input:
+        "variants/{sample}_pilon.vcf.gz"
+    params:
+        name="{sample}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 100,
+        time=lambda wildcards, attempt: attempt * 1
+    output:
+        "pseudogenomes/{sample}_pseudogenome.fasta"
+    log:
+        "logs/pseudogenomes/{sample}.log"
+    shell:
+        """
+        mkdir -p pseudogenomes/
+        scripts/pilonVCFtoFasta_AF0.9.py {input}
+        mv {params.name}_pseudogenome.fasta pseudogenomes/
+        """
+
+rule assembly:
+    input:
+        reads=expand("fastqs/{{sample}}_{paired}.fastq.gz", paired=PAIRED)
+    params:
+        name="{sample}"
+    output:
+        "assemblies/{sample}/contigs.fasta"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 15000,
+        time=lambda wildcards, attempt: attempt * 120,
+        cpus=8
+    threads: 8
+    log:
+        "logs/assembly/{sample}.log"
+    run:
+        shell("mkdir -p assemblies/")
+        if len(PAIRED) == 1:
+            shell("/n/holylfs05/LABS/grad_lab/Lab/software/SPAdes-3.15.5-Linux/bin/spades.py -t 8 --careful -s fastqs/{params.name}.fastq.gz -o assemblies/{params.name}")
+        if len(PAIRED) == 2:
+            shell("/n/holylfs05/LABS/grad_lab/Lab/software/SPAdes-3.15.5-Linux/bin/spades.py -t 8 --careful -1 fastqs/{params.name}_1.fastq.gz -2 fastqs/{params.name}_2.fastq.gz -o assemblies/{params.name}")
+
+rule filter_assembly:
+    input:
+        fasta="assemblies/{sample}/contigs.fasta"
+    params:
+        name="{sample}"
+    output:
+        fasta="assemblies/filtered/{sample}_contigs_filtered.fa"
+    log:
+       "logs/filter/{sample}.log"
+    run:
+        shell("mkdir -p assemblies/filtered")
+        contigs = []
+        for contig in SeqIO.parse(input.fasta, "fasta"):
+            contig_length = int(contig.id.split("_")[-3])
+            contig_coverage = float(contig.id.split("_")[-1])
+            if contig_length > 500 and contig_coverage > 10:
+                contig.id = contig.id.replace("NODE", params.name)
+                contigs.append(contig)
+        SeqIO.write(contigs, output.fasta, "fasta")
+
+rule annotation:
+    input:
+        fasta="assemblies/filtered/{sample}_contigs_filtered.fa"
+    params:
+        name="{sample}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+        time=lambda wildcards, attempt: attempt * 10,
+        cpus=8
+    output:
+        gff="annotations/{sample}/{sample}.gff"
+    threads: 8
+    conda:
+        "conda_envs/prokka.yml"
+    log:
+        "logs/annotation/{sample}.log"
+    shell:
+        """
+        mkdir -p annotations/
+        prokka --force --centre X --compliant --outdir annotations/{params.name} --locustag {params.name} --prefix {params.name} --genus Neisseria --species gonorrhoeae --strain {params.name} --cpus 8 {input.fasta}
+        """
+
+rule snps:
+    input:
+        expand("pseudogenomes/{sample}_pseudogenome.fasta", sample=SAMPLES)
+    output:
+        aln=temp("{0}_gc.aln".format(datetime.strftime(datetime.now(), "%Y-%m-%d"))),
+        vcf=temp("{0}_gc_snps.vcf".format(datetime.strftime(datetime.now(), "%Y-%m-%d")))
+    conda:
+        "conda_envs/snp-sites.yml"
+    shell:
+        """
+        cat reference_sequences/Neisseria_gonorrhoeae_NCCP11945.fa {input} > {output.aln}
+        snp-sites -v {output.aln} > {output.vcf}
+        """
+
+rule resistance_alleles: 
+    input:
+        "{0}_gc_snps.vcf".format(datetime.strftime(datetime.now(), "%Y-%m-%d"))
+    output: 
+        "resistance/{0}_gc_resistance_alleles.tsv".format(datetime.strftime(datetime.now(), "%Y-%m-%d")) 
+    params:
+        file_name="{0}_gc_resistance_alleles.tsv".format(datetime.strftime(datetime.now(), "%Y-%m-%d"))
+    shell:
+        """
+        scripts/resistance_alleles_pseudogenomes.py {input}
+        mkdir -p itol/
+    mkdir -p resistance/
+        mv itol_* itol/
+    mv {params.file_name} resistance/
+        """
+
+
+rule map_sort_16S:
+    input:
+        reads=expand("fastqs/{{sample}}_{paired}.fastq.gz", paired=PAIRED),
+        idx=multiext("reference_sequences/NCCP11945_rrna16s4.fa", ".amb", ".ann", ".bwt", ".pac", ".sa")
+    output:
+        temp("mapping_16S/{sample}.bam")
+    params:
+        index="reference_sequences/NCCP11945_rrna16s4.fa",
+        sorting="samtools",
+        sort_order="coordinate"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        time=lambda wildcards, attempt: attempt * 25
+    log:
+        "logs/bwa_16S/{sample}.log"
+    threads: 1
+    wrapper:
+        "v1.28.0/bio/bwa/mem"
+
+rule duplicates_16S:
+    input:
+        bams="mapping_16S/{sample}.bam"
+    output:
+        bam="mapping_16S/{sample}.marked.bam",
+        metrics=temp("mapping_16S/{sample}.metrics")
+    log:
+        "logs/picard_16S/{sample}.log"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        time=lambda wildcards, attempt: attempt * 6
+    wrapper:
+        "v1.28.0/bio/picard/markduplicates"
+
+rule index_16S:
+    input:
+        "mapping_16S/{sample}.marked.bam"
+    output:
+        "mapping_16S/{sample}.marked.bam.bai"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 100,
+        time=lambda wildcards, attempt: attempt * 1
+    wrapper:
+        "v1.28.0/bio/samtools/index"
+ 
+rule variants_16S:
+    input:
+        bam="mapping_16S/{sample}.marked.bam",
+        index="mapping_16S/{sample}.marked.bam.bai",
+        reference="reference_sequences/NCCP11945_rrna16s4.fa"
+    params:
+        name="{sample}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+        time=lambda wildcards, attempt: attempt * 2
+    output:
+        "variants_16S/{sample}_pilon.vcf",
+        temp("variants_16S/{sample}_pilon.fasta")
+    log:
+        "logs/pilon_16S/{sample}.log"
+    shell:
+        """
+        java -Xmx16g -jar /n/holylfs05/LABS/grad_lab/Lab/software/pilon-1.24.jar --genome {input.reference} --bam {input.bam} --output variants_16S/{params.name}_pilon --variant --vcf --mindepth 10 --minmq 20
+        """
+
+rule map_sort_23S:
+    input:
+        reads=expand("fastqs/{{sample}}_{paired}.fastq.gz", paired=PAIRED),
+        idx=multiext("reference_sequences/NCCP11945_rrna23s4.fa", ".amb", ".ann", ".bwt", ".pac", ".sa")
+    output:
+        temp("mapping_23S/{sample}.bam")
+    params:
+        index="reference_sequences/NCCP11945_rrna23s4.fa",
+        sorting="samtools",
+        sort_order="coordinate"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        time=lambda wildcards, attempt: attempt * 25
+    log:
+        "logs/bwa_23S/{sample}.log"
+    threads: 1
+    wrapper:
+        "v1.28.0/bio/bwa/mem"
+
+rule duplicates_23S:
+    input:
+        bams="mapping_23S/{sample}.bam"
+    output:
+        bam="mapping_23S/{sample}.marked.bam",
+        metrics=temp("mapping_23S/{sample}.metrics")
+    log:
+        "logs/picard_23S/{sample}.log"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 2000,
+        time=lambda wildcards, attempt: attempt * 6
+    wrapper:
+        "v1.28.0/bio/picard/markduplicates"
+
+rule index_23S:
+    input:
+        "mapping_23S/{sample}.marked.bam"
+    output:
+        "mapping_23S/{sample}.marked.bam.bai"
+    params: ""
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 100,
+        time=lambda wildcards, attempt: attempt * 1
+    wrapper:
+        "v1.28.0/bio/samtools/index"
+
+
+rule variants_23S:
+    input:
+        bam="mapping_23S/{sample}.marked.bam",
+        index="mapping_23S/{sample}.marked.bam.bai",
+        reference="reference_sequences/NCCP11945_rrna23s4.fa"
+    params:
+        name="{sample}"
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 1000,
+        time=lambda wildcards, attempt: attempt * 5
+    output:
+        "variants_23S/{sample}_pilon.vcf",
+        temp("variants_23S/{sample}_pilon.fasta")
+    log:
+        "logs/pilon_23S/{sample}.log"
+    shell:
+        """
+        java -Xmx16g -jar /n/holylfs05/LABS/grad_lab/Lab/software/pilon-1.24.jar --genome {input.reference} --bam {input.bam} --output variants_23S/{params.name}_pilon --variant --vcf --mindepth 10 --minmq 20
+        """
+
+rule summarize_qc:
+    input:
+        annotations=expand("annotations/{sample}/{sample}.gff", sample=SAMPLES),
+        assemblies=expand("assemblies/filtered/{sample}_contigs_filtered.fa", sample=SAMPLES),
+        pseudogenomes=expand("pseudogenomes/{sample}_pseudogenome.fasta", sample=SAMPLES),
+        bamqc="qc/multiqc_bamqc_data/"
+    output:
+        summary="qc/qc_summary.txt"
+    run:
+        with open(output.summary, "w") as outfile:
+            outfile.write("wgs_id\tassembly_length\tassembly_coverage\tcontigs\tgenes\treference_coverage\treference_percentage_mapped\tpercent_missing\n")
+            reference_qc_dict = defaultdict(dict)
+            with open(input.bamqc + "/multiqc_general_stats.txt", "r") as reference_qc_file:
+                for i,line in enumerate(reference_qc_file):
+                    if i>0:
+                        line = line.strip().split("\t")
+                        s = line[0]
+                        reference_qc_dict[s]["percentage_mapped"] = line[11]
+                        reference_qc_dict[s]["mapping_coverage"] = line[8]
+                for samp in reference_qc_dict:
+                    genome_length = 0
+                    coverage_of_contigs = []
+                    for contig in SeqIO.parse(f"assemblies/filtered/{samp}_contigs_filtered.fa", "fasta"):
+                        contig_length = int(contig.id.split("_")[-3])
+                        genome_length += contig_length
+                        contig_coverage = float(contig.id.split("_")[-1])*contig_length
+                        coverage_of_contigs.append(contig_coverage)
+                    num_contigs = len(coverage_of_contigs)
+                    average_coverage = sum(coverage_of_contigs)/genome_length
+                    with open(f"annotations/{samp}/{samp}.gff", "r") as annotation_file:
+                        num_genes = annotation_file.read().count("\tCDS\t")
+                    pseudogenome = SeqIO.read(f"pseudogenomes/{samp}_pseudogenome.fasta", "fasta")
+                    missing = ((pseudogenome.seq.count("N") + pseudogenome.seq.count("-"))/len(pseudogenome.seq))*100
+                    outfile.write(f"{samp}\t{genome_length}\t{average_coverage}\t{num_contigs}\t{num_genes}\t{reference_qc_dict[samp]['mapping_coverage']}\t{reference_qc_dict[samp]['percentage_mapped']}\t{missing}\n")
+
+rule blastdb:
+    input:
+        expand("assemblies/filtered/{sample}_contigs_filtered.fa", sample=SAMPLES)
+    output:
+        "blastdb/gc.nhr",
+        "blastdb/gc.nin",
+        "blastdb/gc.nsq"
+    conda:
+        "conda_envs/blast.yml"
+    shell:
+        """
+        mkdir -p blastdb
+        cat assemblies/filtered/*.fa > blastdb/gc_contigs.fa
+        makeblastdb -dbtype nucl -in blastdb/gc_contigs.fa -out blastdb/gc
+        """
+
+rule blast_genes:
+    input:
+        nhr="blastdb/gc.nhr",
+        nin="blastdb/gc.nin",
+        nsq="blastdb/gc.nsq",
+        query="reference_sequences/{gene}.fa"
+    output:
+        "blast_results/{gene}_gc_blast.xml"
+    conda:
+        "conda_envs/blast.yml"
+    shell:
+        """
+        mkdir -p blast_results
+        blastn -db blastdb/gc -query {input.query} -out {output} -num_threads 1 -max_target_seqs 30000 -outfmt 5
+        """
+
+rule fasta_genes:
+    input:
+        xml="blast_results/{gene}_gc_blast.xml"
+    output:
+        fasta="blast_results/{gene}_gc.fa",
+        mosaics="blast_results/{gene}_gc_mosaics.fa",
+        outliers="blast_results/{gene}_gc_lengthOutliers.fa"
+    run:
+        blast_result = SearchIO.read(input.xml, "blast-xml")
+        mtr_seqs = []
+        mtr_seqs_mosaic = []
+        mtr_seqs_weirdLengths = []
+        query_length = blast_result.seq_len
+        for hit in blast_result:
+            seq = hit[0].hit
+            seq_length = len(seq)
+            if seq_length/query_length > 1.1 or seq_length/query_length < 0.9:
+                mtr_seqs_weirdLengths.append(seq)
+            elif hit[0].ident_num/query_length < 0.95:
+                mtr_seqs_mosaic.append(seq)
+            else:
+                mtr_seqs.append(seq)
+        SeqIO.write(mtr_seqs, output.fasta, "fasta")
+        SeqIO.write(mtr_seqs_mosaic, output.mosaics, "fasta")
+        SeqIO.write(mtr_seqs_weirdLengths, output.outliers, "fasta")
+
+rule mtr_summary:
+    input:
+        expand("blast_results/{gene}_gc.fa", gene=['mtrC', 'mtrD', 'mtrE', 'mtrR', 'mtrPromoter']),
+        expand("blast_results/{gene}_gc_mosaics.fa", gene=['mtrC', 'mtrD', 'mtrE', 'mtrR', 'mtrPromoter']),
+        expand("blast_results/{gene}_gc_lengthOutliers.fa", gene=['mtrC', 'mtrD', 'mtrE', 'mtrR', 'mtrPromoter'])
+    output: 
+        "resistance/mtr_alleles.tsv"
+    shell:
+        """
+        mkdir -p resistance/
+        scripts/mtr_alleles.py
+        """
+
+rule rRNA_summary:
+    input:
+        expand("variants_16S/{sample}_pilon.vcf", sample=SAMPLES),
+        expand("variants_23S/{sample}_pilon.vcf", sample=SAMPLES)
+    output: 
+        "resistance/rRNA_allele_summary.txt"
+    shell:
+        """
+        mkdir -p resistance/
+        mkdir -p itol/
+        scripts/rRNA_variants.py variants_23S variants_16S
+        mv rRNA_allele_summary.txt resistance/
+        mv itol_* itol/
+        """
+
+rule penA_alleles:
+    input:
+        assemblies=expand("assemblies/filtered/{sample}_contigs_filtered.fa", sample=SAMPLES),
+        description="penA_alleles/penA_descriptions.txt"
+    output: 
+        "resistance/gc_penA.txt"
+    conda:
+        "conda_envs/blast.yml"
+    shell:
+        """
+        mkdir -p resistance/
+        mkdir -p itol/
+        scripts/identify_penA_alleles.py assemblies/filtered/ gc penA_alleles/penA {input.description}
+        mv gc_penA.txt resistance/
+        mv itol_* itol/
+        """
+
+rule gene_presence_absence:
+    input:
+        blaTEM="blast_results/blaTEM_gc_blast.xml",
+        tetM="blast_results/tetM_gc_blast.xml",
+        ermB="blast_results/ermB_gc_blast.xml",
+        ermF="blast_results/ermF_gc_blast.xml"
+    output:
+        summary_file="resistance/resistance_gene_presence_absence.tsv"
+    run:
+        gene_presence_dict = defaultdict(list)
+        blast_results = {}
+        blast_results["blaTEM"] = SearchIO.read(input.blaTEM, "blast-xml")
+        blast_results["tetM"] = SearchIO.read(input.tetM, "blast-xml")
+        blast_results["ermB"] = SearchIO.read(input.ermB, "blast-xml")
+        blast_results["ermF"] = SearchIO.read(input.ermF, "blast-xml")
+        for gene in blast_results:
+            query_length = blast_results[gene].seq_len
+            for hit in blast_results[gene]:
+                seq = hit[0].hit
+                seq_length = len(seq)
+                wgs_id = re.split('_\d+_length', hit.id)[0]
+                if seq_length/query_length > 0.5 and hit[0].ident_num/seq_length > 0.95:
+                    gene_presence_dict[wgs_id].append(gene)
+        with open(output.summary_file, "w") as outfile:
+            outfile.write("wgs_id\tblaTEM\ttetM\termB\termF\n")
+            for s in SAMPLES:
+                presence = "\t".join(["1" if g in gene_presence_dict[s] else "0" for g in ["blaTEM", "tetM", "ermB", "ermF"]])
+                outfile.write(f"{s}\t{presence}\n")
+                
+
+rule inframe_indels:
+    input:
+        penA="blast_results/penA_gc_blast.xml",
+        rpoD="blast_results/rpoD_gc_blast.xml",
+        rplV="blast_results/rplV_gc_blast.xml",
+        rpsE="blast_results/rpsE_gc_blast.xml"
+    output:
+        summary_file="resistance/resistance_inframe_indels.tsv"
+    run:
+        indel_presence_dict = defaultdict(lambda: defaultdict(lambda: "NA"))
+        penA_results = SearchIO.read(input.penA, "blast-xml") 
+        for hit in penA_results:
+            wgs_id = re.split('_\d+_length', hit.id)[0]
+            penA_peptide = hit[0].hit.seq.ungap('-').translate()
+            if "DDTHV" in str(penA_peptide):
+                indel_presence_dict[wgs_id]["penA_345ins"] = "1"
+            elif "DTHV" not in str(penA_peptide):
+                indel_presence_dict[wgs_id]["penA_345ins"] = "NA"
+            else:
+                indel_presence_dict[wgs_id]["penA_345ins"] = "0"
+        rpoD_results = SearchIO.read(input.rpoD, "blast-xml")
+        for hit in rpoD_results:
+            wgs_id = re.split('_\d+_length', hit.id)[0]
+            if str(hit[0].hit.seq[273:285]) == "------------":
+                indel_presence_dict[wgs_id]["rpoD_92-95del"] = "1"
+            elif str(hit[0].hit.seq[273:285]).count("-") == 0:
+                indel_presence_dict[wgs_id]["rpoD_92-95del"] = "0"
+            else:
+                indel_presence_dict[wgs_id]["rpoD_92-95del"] = "NA"
+        rplV_results = SearchIO.read(input.rplV, "blast-xml")
+        for hit in rplV_results:
+            wgs_id = re.split('_\d+_length', hit.id)[0]
+            rplV_peptide = hit[0].hit.seq.ungap('-').translate()
+            if "ARAKARAK" in str(rplV_peptide):
+                indel_presence_dict[wgs_id]["rplV_duplication"] = "ARAK_duplication"
+            elif "KGPSLKKGPSLK" in str(rplV_peptide):
+                indel_presence_dict[wgs_id]["rplV_duplication"] = "KGPSLK_duplication"
+            elif len(rplV_peptide) > 110:
+                indel_presence_dict[wgs_id]["rplV_duplication"] = "potential_novel_duplication"
+            else:
+                indel_presence_dict[wgs_id]["rplV_duplication"] = "none"
+        rpsE_results = SearchIO.read(input.rpsE, "blast-xml")
+        for hit in rpsE_results:
+            wgs_id = re.split('_\d+_length', hit.id)[0]
+            if hit[0].hit.seq[75:84] == "GTAGTTAAA":
+                indel_presence_dict[wgs_id]["rpsE_27del"] = "0"
+            elif hit[0].hit.seq[75:84].count("-") == 3:
+                indel_presence_dict[wgs_id]["rpsE_27del"] = "1"
+            else:
+                indel_presence_dict[wgs_id]["rpsE_27del"] = "NA"
+        with open(output.summary_file, "w") as outfile:
+            outfile.write("wgs_id\tpenA_345ins\trpoD_92-95del\trplV_duplications\trpsE_27del\n")
+            for s in SAMPLES:
+                alleles = [indel_presence_dict[s][x] for x in ["penA_345ins", "rpoD_92-95del", "rplV_duplication", "rpsE_27del"]]
+                alleles_str = "\t".join(alleles)
+                outfile.write(f"{s}\t{alleles_str}\n")
+
+
+rule porB1a:
+    input:
+        porB1a="blast_results/porB1a_gc_blast.xml",
+    output:
+        summary_file="resistance/porB1a_SNPs.txt"
+    run:
+        with open(output.summary_file, "w") as outfile:
+            outfile.write("wgs_id\tPorB1a_120\tPorB1a_121\n")
+            blast_results = SearchIO.read(input.porB1a, "blast-xml")
+            query_length = blast_results.seq_len
+            for hit in blast_results:
+                seq = hit[0].hit
+                seq_length = len(seq)
+                wgs_id = re.split('_\d+_length', hit.id)[0]
+                if seq_length/query_length > 0.8 and hit[0].ident_num/seq_length > 0.85:
+                    porB_peptide = str(hit[0].hit.seq.ungap('-').translate())
+                    outfile.write(f"{wgs_id}\t{porB_peptide[119]}\t{porB_peptide[120]}\n")
+            
+
+rule porB1b:
+    input:
+        porB1b="blast_results/porB1b_gc_blast.xml",
+    output:
+        summary_file="resistance/porB1b_SNPs.txt"
+    run:
+        with open(output.summary_file, "w") as outfile:
+            outfile.write("wgs_id\tPorB1b_120\tPorB1b_121\n")
+            blast_results = SearchIO.read(input.porB1b, "blast-xml")
+            query_length = blast_results.seq_len
+            for hit in blast_results:
+                seq = hit[0].hit
+                seq_length = len(seq)
+                wgs_id = re.split('_\d+_length', hit.id)[0]
+                if seq_length/query_length > 0.8 and hit[0].ident_num/seq_length > 0.85:
+                    porB_peptide = str(hit[0].hit.seq.ungap('-').translate())
+                    outfile.write(f"{wgs_id}\t{porB_peptide[119]}\t{porB_peptide[120]}\n")
+
+rule create_poppunk_input:
+    input:
+        expand("assemblies/filtered/{sample}_contigs_filtered.fa", sample = SAMPLES)
+    output:
+        poppunk_in="poppunk_qlist.txt"
+    run:
+        with open(output.poppunk_in, "w") as outfile:
+            for sample in SAMPLES:
+                path = f"assemblies/filtered/{sample}_contigs_filtered.fa"
+                outfile.write(f"{sample}\t{path}\n")
+                
+rule poppunk_assignment:
+    input:
+        query="poppunk_qlist.txt",
+    output:
+        "poppunk_finished.txt"
+    params:
+        database="/n/grad_lab2/Lab/gonococcus/analyses/gc_clusters"
+    threads: 8
+    resources:
+        mem_mb=lambda wildcards, attempt: attempt * 40000,
+        time=lambda wildcards, attempt: attempt * 45,
+        partition="shared"
+    conda:
+        "conda_envs/poppunk.yml"
+    shell:
+        """
+        poppunk_assign --db {params.database} --query {input.query} --output gc_clusters --threads 8 --overwrite --update-db
+        echo "updated poppunk database should be copied to /n/grad_lab2/Lab/gonococcus/analyses/gc_clusters/" >  {output}
+        """

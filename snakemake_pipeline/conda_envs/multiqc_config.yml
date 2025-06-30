@@ -1,0 +1,6 @@
+extra_fn_clean_exts:
+        - type: remove
+          pattern: '.marked'
+
+max_table_rows: 5000
+

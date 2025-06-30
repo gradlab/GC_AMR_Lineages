@@ -1,0 +1,169 @@
+id	description	mosaic
+100	penA WT NonMosaic	no
+101	penA Type 101 Mosaic; A501V	yes
+102	penA Type 102 NonMosaic, A517G	no
+103	penA Type 103 NonMosaic; A501V; A517G	no
+104	penA Type 104 NonMosaic; A501T, A517G, G543S	no
+105	penA Type 105 Mosaic; N513Y	yes
+106	penA Type 106 NonMosaic; A517G, G543S	no
+107	penA Type 107 NonMosaic; A501T, A517G, G543S	no
+108	penA Type 108 Mosaic; N513Y	yes
+109	penA Type 109 NonMosaic; A501V, A517G	no
+10	penA Type X Mosaic; N513Y	yes
+110	penA Type 110 Mosaic; N513Y	yes
+111	penA Type 111 Mosaic; N513Y	yes
+112	penA Type 112 SemiMosaic; N513Y	no
+113	penA Type 113 SemiMosaic; N513Y	no
+114	penA Type 114 SemiMosaic	no
+115	penA Type 115 Mosaic	yes
+116	penA Type 116 SemiMosaic	no
+117	penA Type 117 Mosaic; N513Y	yes
+118	penA Type 118 Mosaic; N513Y	yes
+119	penA Type 119 NonMosaic	no
+11	penA Type XI NonMosaic; A501V, A517G	no
+120	penA Type 120 NonMosaic; A501V, A517G	no
+121	penA Type 121 Mosaic; A311V, A517G	yes
+122	penA Type 122 NonMosaic; A501V, A517G	no
+123	penA Type 123 NonMosaic	no
+124	penA Type 124 Mosaic; A311V, N513Y	yes
+125	penA Type 125 NonMosaic; A501T, A517G, G543S	no
+126	penA Type 126 NonMosaic; A501T, A517G, G543S	no
+127	penA Type 127 NonMosaic; N513Y	no
+128	penA Type 128 SemiMosaic; A501V, A517G	no
+129	penA Type 129 Mosaic; A517G	yes
+12	penA Type XII NonMosaic; A517G	no
+130	penA Type 130 SemiMosaic; N513Y	no
+131	penA Type 131 Mosaic	yes
+132	penA Type 132 NonMosaic; A517G	no
+133	penA Type 133 Mosaic; N513Y	yes
+134	penA Type 134 Mosaic; A517G	yes
+135	penA Type 135 SemiMosaic; N513Y	no
+136	penA Type 136 Mosaic; N513Y	yes
+137	penA Type 137 NonMosaic; A517G, G543S	no
+138	penA Type 138 Mosaic; N513Y	yes
+139	penA Type 139 Mosaic; Wild Type	yes
+13	penA Type XIII NonMosaic; A501V, A517G	no
+140	penA Type 140 SemiMosaic; A517G	no
+141	penA Type 141 NonMosaic; A501V, A517G	no
+142	penA Type 142 NonMosaic; A501V, A517G	no
+143	penA Type 143 NonMosaic; A501V, A517G	no
+144	penA Type 144 NonMosaic; A501V, A517G	no
+145	penA Type 145 Mosaic; N513Y	yes
+146	penA Type 146 NonMosaic; A501T, A517G, G543S	no
+147	penA Type 147 NonMosaic; A501V, A517G	no
+148	penA Type 148 NonMosaic; A517G	no
+149	penA Type 149 Mosaic; A501V	yes
+14	penA Type XIV NonMosaic; A517G	no
+150	penA Type 150 SemiMosaic; A517G G543S	no
+151	penA Type 151 NonMosaic; A517G	no
+152	penA Type 152 Mosaic; N513Y	yes
+153	penA Type 153 NonMosaic; A517G	no
+154	penA Type 154 NonMosaic; A501V A517G	no
+155	penA Type 155 NonMosaic; A501V A517G	no
+156	penA Type 156 NonMosaic; A311V A517G	no
+157	penA Type 157 NonMosaic; A517G	no
+158	penA Type 158 NonMosaic; A501V A517G	no
+159	penA Type 159 NonMosaic; A517G	no
+15	penA Type XV NonMosaic	no
+160	penA Type 160 NonMosaic; A517G	no
+161	penA Type 161 NonMosaic; A517G	no
+162	penA Type 162 NonMosaic; A517G	no
+163	penA Type 163 NonMosaic; A517G G543S	no
+164	penA Type 164 SemiMosaic; N513Y	no
+165	penA Type 165 SemiMosaic; N513Y	no
+166	penA Type 166 Mosaic; N513Y	yes
+167	penA Type 167 SemiMosaic; N513Y	no
+168	penA Type 168 Mosaic; A501V, N513Y	yes
+169	penA Type 169 Mosaic; A311V, N513Y	yes
+16	penA Type XVI NonMosaic; A517G	no
+170	penA Type 170 NonMosaic	no
+171	penA Type 171 Mosaic; N513Y	yes
+172	penA Type 172 Mosaic	yes
+173	penA Type 173 SemiMosaic	no
+174	penA Type 174 NonMosaic; A517G	no
+175	penA Type 175 NonMosaic; A517G	no
+176	penA Type 176 NonMosaic	no
+177	penA Type 177 SemiMosaic	no
+178	penA Type 178 NonMosaic; N513Y	no
+179	penA Type 179 NonMosaic	no
+17	penA Type XVII NonMosaic; A501V, A517G, G543S	no
+180	penA Type 180 Mosaic; N513Y	yes
+181	penA Type 181 NonMosaic: A501V, A517G, G543S	no
+182	penA Type 182 NonMosaic; N513Y	no
+18	penA Type XVIII NonMosaic; A501T, A517G, G543S	no
+19	penA Type XIX NonMosaic; A517G	no
+1	penA Type I NonMosaic	no
+21	penA Type XXI NonMosaic; A501V, A517G	no
+22	penA Type XXII NonMosaic; A517G	no
+27	penA Type XXVII Mosaic; N513Y	yes
+2	penA Type II NonMosaic; A517G	no
+34	penA Type XXXIV Mosaic; N513Y	yes
+35	penA Type XXXV Mosaic	yes
+37	penA Type 37 Mosaic; A311V, N513Y	yes
+38	penA Type 38 Mosaic	yes
+39	penA Type 39 SemiMosaic	no
+3	penA Type III NonMosaic; A517G	no
+40	penA Type 40 NonMosaic	no
+41	penA Type 41 NonMosaic; A517G, G543S	no
+42	penA Type 42 Mosaic; A501P, N513Y	yes
+43	penA Type 43 NonMosaic; A501V, A517G	no
+44	penA Type 44 NonMosaic; A501T, A517G	no
+45	penA Type 45 NonMosaic; A517G	no
+46	penA Type 46 NonMosaic; A517G	no
+47	penA Type 47 SemiMosaic	no
+48	penA Type 48 NonMosaic; A517G	no
+49	penA Type 49 NonMosaic; A501T, A517G	no
+4	penA Type IV NonMosaic; A517G, G543S	no
+50	penA Type 50 NonMosaic; A517G	no
+51	penA Type 51 Mosaic; N513Y	yes
+52	penA Type 52 Mosaic; N513Y	yes
+53	penA Type 53 Mosaic; N513Y	yes
+54	penA Type 54 NonMosaic; A501V, A517G	no
+55	penA Type 55 Mosaic; N513Y	yes
+56	penA Type 56 NonMosaic; A501V, A517G	no
+57	penA Type 57 NonMosaic; A501V, A517G	no
+58	penA Type 58 Mosaic; A513Y	yes
+59	penA Type 59 Mosaic; A311V, N513Y	yes
+5	penA Type V NonMosaic; A517G, G543S	no
+60	penA Type 60 Mosaic; A311V, N513Y	yes
+61	penA Type 61 NonMosaic; A517G	no
+62	penA Type 62 Mosaic; N513Y	yes
+63	penA Type 63 Mosaic	yes
+64	penA Type 64 Mosaic; A311V, N513Y	yes
+65	penA Type 65 SemiMosaic	no
+66	penA Type 66 NonMosaic; N513Y	no
+67	penA Type 67 Mosaic; N513Y	yes
+68	penA Type 68 NonMosaic; A517G	no
+69	penA Type 69 NonMosaic; A517G	no
+70	penA Type 70 NonMosaic; A517G	no
+71	penA Type 71 Mosaic; N513Y	yes
+72	penA Type 72 Mosaic; N513Y	yes
+73	penA Type 73 SemiMosaic; N513Y	no
+74	penA Type 74 Mosaic	yes
+75	penA Type 75 Mosaic; N513Y	yes
+76	penA Type 76 NonMosaic	no
+77	penA Type 77 NonMosaic; A501T, A517G	no
+78	penA Type 78 SemiMosaic; A501T, A517G	no
+79	penA Type 79 NonMosaic	no
+7	penA Type VII NonMosaic; A501V, A517G, G543S	no
+80	penA Type 80 SemiMosaic; A517G	no
+81	penA Type 81 SemiMosaic; N513Y	no
+82	penA Type 82 NonMosaic	no
+83	penA Type 83 NonMosaic; A517G	no
+84	penA Type 84 NonMosaic	no
+85	penA Type 85 Mosaic; A501V, N513Y	yes
+86	penA Type 86 NonMosaic; A517G	no
+87	penA Type 87 NonMosaic; A501T, A517G	no
+88	penA Type 88 NonMosaic; A501V, A517G	no
+89	penA Type 89 SemiMosaic	no
+90	penA Type 90 NonMosaic; A517G	no
+91	penA Type 91 SemiMosaic; N513Y	no
+92	penA Type 92 Mosaic; N513Y	yes
+93	penA Type 93 SemiMosaic	no
+94	penA Type 94 NonMosaic; N513Y	no
+95	penA Type 95 NonMosaic	no
+96	penA Type 96 NonMosaic	no
+97	penA Type 97 NonMosaic	no
+98	penA Type 98 NonMosaic	no
+99	penA Type 99 NonMosaic; A311V	no
+9	penA Type IX NonMosaic; A517G	no

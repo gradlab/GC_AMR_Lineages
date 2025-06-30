@@ -1,0 +1,11 @@
+restart-times: 3
+cluster: "sbatch --parsable -p {resources.partition} -t {resources.time} -n {resources.cpus} -N 1 --mem={resources.mem_mb} -o logs/slurm/{rule}_{wildcards}.out -e logs/slurm/{rule}_{wildcards}.err --account=grad_lab"
+default-resources: [cpus=1, mem_mb=1000, time=60, partition="serial_requeue"]
+max-jobs-per-second: 1
+max-status-checks-per-second: 10
+local-cores: 1
+use-conda: true
+conda-prefix: /n/home00/tmortimer/.conda/envs/
+jobs: 100
+rerun-incomplete: true
+cluster-status: "slurm-status.py"
