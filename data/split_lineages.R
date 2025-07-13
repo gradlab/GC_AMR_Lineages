@@ -405,9 +405,19 @@ for (la in lin_assignments)
 # Plot lineage summary
 source("../plotting/plot_lin_motif.R")
 
+mic_for_clust <- meta[tree_retained$tip.label, ] %>% 
+        select(c(ciprofloxacin, cefixime, azithromycin)) %>% 
+        mutate(x=tree_retained$tip.label) %>%
+        pivot_longer(!c(x)) %>% 
+        mutate(value = as.numeric(value))
+
+ltrees <- plot_lin_tree(tree_retained, lin_df, mic_for_clust)
 pdf("../plots/lin_tree.pdf", 12, 16)
-p1 <- plot_lin_tree(tree_retained, lin_df)
-plot(p1)
+plot(ltrees$p1)
+dev.off()
+
+pdf("../plots/lin_tree_mic.pdf", 12, 16)
+plot(ltrees$p2)
 dev.off()
 
 make_motif_df(lin_data) %>% 
@@ -434,11 +444,6 @@ allele_motif <- anc_states_combined_with_penA[tree_retained$tip.label, ] %>%
         unpack(where(is.data.frame), names_sep = ": ") %>% as.data.frame()
 allele_motif$x <- tree_retained$tip.label
 
-mic_for_clust <- meta[tree_retained$tip.label, ] %>% 
-        select(c(ciprofloxacin, cefixime, azithromycin)) %>% 
-        mutate(x=tree_retained$tip.label) %>%
-        pivot_longer(!c(x)) %>% 
-        mutate(value = as.numeric(value))
 source("../plotting/plot_lin_clust.R")
 lins_to_extract <- c(20:22)
 

@@ -138,7 +138,8 @@ make_motif_df <- function(lin_data, pena_desc)
     tbl
 }
 
-plot_lin_tree <- function(tree, lin_df) {
+plot_lin_tree <- function(tree, lin_df, mics) {
+    cutoffs <- c(ciprofloxacin=0.125, cefixime=0.125, azithromycin=1)
 
     to <- ggtree(tree,layout="rectangular")$data %>%
         mutate(lin=lin_df[label,"lin"]) %>%
@@ -156,7 +157,7 @@ plot_lin_tree <- function(tree, lin_df) {
 
     p <- ggtree(tree,mrsd="2020-1-1", lwd=.8) %<+% lin_df +
         aes(color=col, alpha=alpha) + 
-        geom_nodelab(mapping=aes(node=node, label=cllab, color=col_lab, x=2020+2.5, alpha=1.0),size=5.0, hjust=0)+ 
+        geom_nodelab(mapping=aes(node=node, label=cllab, color=col_lab, x=2020+2, alpha=1.0),size=5.0, hjust=0)+ 
         scale_color_manual(
             breaks=factor(0L:3L),
             values=c("slategray3","steelblue4", "steelblue2", "tomato3"), 
@@ -166,14 +167,34 @@ plot_lin_tree <- function(tree, lin_df) {
         scale_x_ggtree()+
         labs(x="Year")+
         scale_x_continuous(breaks=seq(from=1950, to=2020, by= 10)) +
-        coord_cartesian(xlim = c(1950, 2026))+
+        coord_cartesian(xlim = c(1950, 2050))+
         theme(legend.position = "none",
             axis.text.x = element_text(size=15),
             axis.title.x = element_text(size=20),
             axis.line.x = element_line()) #+
         #scale_x_ggtree()#,
-            #plot.margin = unit(c(14,14,8,8), "mm"))
-    p
+        #plot.margin = unit(c(14,14,8,8), "mm"))
+
+    m2 <- mics %>% #mutate(value=(log2(value))) %>%
+        mutate(value = ifelse(is.finite(value) & value != 0,value,NA)) %>%
+        pivot_wider() %>% as.data.frame()
+    rn <- m2$x
+    m2 <- m2[,-1] 
+    rownames(m2) <- rn
+    #m2 <- apply(m2, 2, function(x) x-mean(x, na.rm=T))
+    #m2 <- apply(m2, 2, function(x) x/sd(x, na.rm=T))
+
+    p2 <- gheatmap(p, m2[,1, drop=F], width=0.013, offset=11, hjust=0, color=NA, colnames=T) + 
+        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[1]," MIC"),breaks=c(0.01,0.06,0.25,1,4,16),limits=c(0.005,32),oob=scales::squish)
+    p2 <- p2 + new_scale_fill()
+    p2 <- gheatmap(p2, m2[,2, drop=F], width=0.013, offset=17, hjust=0, color=NA, colnames=T) + 
+        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[2]," MIC"),breaks=c(0.006,0.03,0.125,0.5),limits=c(0.003,1),oob=scales::squish)
+    p2 <- p2 + new_scale_fill()
+    p2 <- gheatmap(p2, m2[,3, drop=F], width=0.013, offset=23, hjust=0, color=NA, colnames=T) + 
+        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[3]," MIC"),breaks=c(0.125,0.5,2,8),limits=c(0.06, 16),oob=scales::squish)
+
+    #p2 <- p + mic_panel + plot_layout(widths=c(5,1))
+    return(list(p1=p, p2=p2))
 }
 
 plot_lin_panel <- function(lin_data) 
