@@ -2,7 +2,7 @@
 ## Layout
 This repository contains all the code and data that is needed to reproduce the results featured in _Quantifying the impact of genetic determinants of antibiotic resistance on bacterial lineage dynamics_. The input data provided consists of all sample metadata, phylogenetic trees, and usage data that was used as an input for the various analyses featured in the accompanying manuscript.
 * The top level directory contains several subdirectories as well as the file ```run_model.R```. This file contains the main analyses and uses inputs generated during lineage calling steps.
-* The ```snakemake_pipeline``` directory contains the genome assembly and variant calling pipeline
+* The ```snakemake_pipeline``` directory contains the genome assembly and variant calling pipeline. You probably don't want to run this as it requires access to HPC.
 * The directories ```plots/``` and ```tables/``` contain plots and tables generated during the various steps that make up the analysis.
 * The ```plotting/``` directory contains scripts used to generate specialised figures used within the manuscript.
 * The ```models/``` directory contains files that make up the phylodynamic model, as well as generic plotting functions for visualising the model's outputs, along with preprocessing functions.
