@@ -45,7 +45,8 @@ The following packages are required and available on Bioconductor:
 * ```ggtree```
 
 Here's the detailed session info including all package versions:
-```R version 4.4.0 (2024-04-24)
+```
+R version 4.4.0 (2024-04-24)
 Platform: aarch64-apple-darwin20
 Running under: macOS 15.6
 
