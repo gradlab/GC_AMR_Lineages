@@ -185,13 +185,13 @@ plot_lin_tree <- function(tree, lin_df, mics) {
     #m2 <- apply(m2, 2, function(x) x/sd(x, na.rm=T))
 
     p2 <- gheatmap(p, m2[,1, drop=F], width=0.013, offset=11, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[1]," MIC"),breaks=c(0.01,0.06,0.25,1,4,16),limits=c(0.005,32),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[1]," MIC"),breaks=c(0.01,0.06,0.25,1,4,16),limits=c(0.005,32),oob=scales::squish)
     p2 <- p2 + new_scale_fill()
     p2 <- gheatmap(p2, m2[,2, drop=F], width=0.013, offset=17, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[2]," MIC"),breaks=c(0.006,0.03,0.125,0.5),limits=c(0.003,1),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[2]," MIC"),breaks=c(0.006,0.03,0.125,0.5),limits=c(0.003,1),oob=scales::squish)
     p2 <- p2 + new_scale_fill()
     p2 <- gheatmap(p2, m2[,3, drop=F], width=0.013, offset=23, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", trans = 'log2', name=paste0(colnames(m2)[3]," MIC"),breaks=c(0.125,0.5,2,8),limits=c(0.06, 16),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[3]," MIC"),breaks=c(0.125,0.5,2,8),limits=c(0.06, 16),oob=scales::squish)
 
     #p2 <- p + mic_panel + plot_layout(widths=c(5,1))
     return(list(p1=p, p2=p2))
