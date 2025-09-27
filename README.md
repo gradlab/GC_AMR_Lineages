@@ -92,3 +92,4 @@ loaded via a namespace (and not attached):
 [49] Rcpp_1.0.12          tidytree_0.4.6       xml2_1.3.6          
 [52] jsonlite_2.0.0       R6_2.5.1             fs_1.6.4            
 ```
+In addition, `cmdstan` version  `2.34.1` was used.
