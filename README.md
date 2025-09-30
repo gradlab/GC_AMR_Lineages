@@ -10,6 +10,7 @@ This repository contains all the code and data that is needed to reproduce the r
   + ```data/metadata``` contains metadata and covariate files.
   + ```data/pastml``` contains raw ```pastml``` output files as well as a script for pre-processing pastml inputs.
   + ```data/split_lineages.R``` is the main script used to assign lineages and generate input files for the phylodynamic model.
+  + (Optional) ```data/compare_subs_rate.R``` can be used to compare the substitution rate estimated by LSD to the one estimated by BactDating. This requires the `R` package `Rlsd2` that can be installed from [https://github.com/mdkarcher/phylodyn](https://github.com/tothuhien/Rlsd2).
 
 ## Usage
 The execution order is as follows:
