@@ -69,9 +69,14 @@ plot_lin_clust <- function(lins, anc_parents, lin_ids, nodedates, tree, allele_m
         mutate(time_range = ifelse(is.na(cllab), NA, time_range)) %>%
         mutate(time_med = ifelse(is.na(cllab), NA, time_med))
 
+    print("MRCA timing for lineage cluster")
+    lin_df2 %>% 
+        filter(!is.na(cllab)) %>%
+        print()
+
     tree_panel <- ggtree(tree_combined, mrsd=paste0(as_date(date_decimal(max_t)))) %<+% lin_df2 +
         aes(color=col, alpha=alpha) + 
-        geom_range(range="time_range", center="time_med", color="#E7298AFF", size = 1, alpha = 0.7) +
+        #geom_range(range="time_range", center="time_med", color="#E7298AFF", size = 1, alpha = 0.7) +
         scale_color_brewer(palette ="Set2",guide="none",na.value="gray15") +
         scale_alpha_continuous(guide="none", range=c(.1,1.0)) + 
         geom_vline(aes(xintercept = 2007), linetype="dashed", color="gray25", alpha=0.8) +
