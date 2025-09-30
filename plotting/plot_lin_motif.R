@@ -153,7 +153,11 @@ plot_lin_tree <- function(tree, lin_df, mics) {
             col = ifelse(!is.na(cllab), NA, col_lab), 
             alpha = 1 - 0.2*(is.na(lin) | div | !is.na(cllab))) %>%
             mutate(col=factor(col),
-                col_lab=factor(col_lab))
+                col_lab=factor(col_lab)) %>%
+        mutate(time_range=apply(qs[c(1,3), ], 2, as.list),
+            time_med=as.list(qs[2,])) %>%
+        mutate(time_range = ifelse(is.na(cllab), NA, time_range)) %>%
+        mutate(time_med = ifelse(is.na(cllab), NA, time_med))
 
     p <- ggtree(tree,mrsd="2020-1-1", lwd=.8) %<+% lin_df +
         aes(color=col, alpha=alpha) + 
@@ -185,16 +189,22 @@ plot_lin_tree <- function(tree, lin_df, mics) {
     #m2 <- apply(m2, 2, function(x) x/sd(x, na.rm=T))
 
     p2 <- gheatmap(p, m2[,1, drop=F], width=0.013, offset=11, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[1]," MIC"),breaks=c(0.01,0.06,0.25,1,4,16),limits=c(0.005,32),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=-1, trans = 'log2', name=paste0(colnames(m2)[1]," MIC"),breaks=c(0.01,0.06,0.25,1,4,16),limits=c(0.005,32),oob=scales::squish)
     p2 <- p2 + new_scale_fill()
     p2 <- gheatmap(p2, m2[,2, drop=F], width=0.013, offset=17, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[2]," MIC"),breaks=c(0.006,0.03,0.125,0.5),limits=c(0.003,1),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=-1, trans = 'log2', name=paste0(colnames(m2)[2]," MIC"),breaks=c(0.006,0.03,0.125,0.5),limits=c(0.003,1),oob=scales::squish)
     p2 <- p2 + new_scale_fill()
     p2 <- gheatmap(p2, m2[,3, drop=F], width=0.013, offset=23, hjust=0, color=NA, colnames=T) + 
-        scale_fill_distiller(palette = "YlOrBr", direction=1, trans = 'log2', name=paste0(colnames(m2)[3]," MIC"),breaks=c(0.125,0.5,2,8),limits=c(0.06, 16),oob=scales::squish)
+        scale_fill_distiller(palette = "YlOrBr", direction=-1, trans = 'log2', name=paste0(colnames(m2)[3]," MIC"),breaks=c(0.125,0.5,2,8),limits=c(0.06, 16),oob=scales::squish)
+    
+    p1 <- p+geom_range(range="time_range", 
+        center="time_med", 
+        color="darkorange3", 
+        size = 1, 
+        alpha = 0.5)
 
     #p2 <- p + mic_panel + plot_layout(widths=c(5,1))
-    return(list(p1=p, p2=p2))
+    return(list(p1=p1, p2=p2))
 }
 
 plot_lin_panel <- function(lin_data) 

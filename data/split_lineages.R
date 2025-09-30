@@ -98,7 +98,7 @@ names(stems) <- retained_names
 
 ## Compute probs that a node is younger than time_cut
 p_younger <- apply(record, 2, function(x) sum(x > time_cut))/nrow(record)
-
+qs <- apply(record, 2, quantile, probs = c(0.025, 0.5, 0.975))
 ## Mark all oldest nodes that are younger than time_cut with probability >= .99 as potential stems
 for (i in 1:nrow(tree_retained$edge))
 {
@@ -173,6 +173,19 @@ assign_lins <- function(anc_tree, size_cutoff)
     if(n_contig[root_idx] > 0)
     {
         is_lin_anc[root_idx] <- T
+    }
+
+    preord <- rev(ord)
+    for (i in preord)
+    {
+        pa <- phy$edge[i,1]
+        ch <- phy$edge[i,2]
+
+        if (no_change[i] && is_lin_anc[pa] && n_contig[pa] == n_contig[ch])
+        {
+            is_lin_anc[pa] <- F
+            is_lin_anc[ch] <- T 
+        }
     }
 
     lin_clades <- as.list(rep(list(list()),n))
